@@ -1,28 +1,12 @@
-import rsa2
-import hashlib
-import socket
+import multiprocessing
 import time
-import random
 import pymysql
 import socket,threading
 from Common import *
-'''a='123'
-db  = pymysql.connect('localhost','root', '', 'keberos')
-cursor = db.cursor()
-cursor.execute('select * from users where user = %s',(a,))
-myresult = cursor.fetchall()
-for x in myresult:
-    id=x[0]
-print(id)
-db.close()'''
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host = '127.0.0.1'
-port = 9090
-server.bind((host, port))
-server.listen(5)
-Ktgs='12345678' #tgs 和 AS共有的 自己设置的
-def jieshou():
-    client,addr=server.accept()
+
+
+def jieshou(client,addr):
+
     print("已连接")
     addr=addr[0]
     try :
@@ -100,12 +84,33 @@ def logging(user,mima):
         return True
     else:
         return False
+def fun(client,addr):
+
+    (pack, addr, client) = jieshou(client,addr)
+    unpack(pack)
+
+if __name__=='__main__':
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    host = '127.0.0.1'
+    port = 9090
+    server.bind((host, port))
+    server.listen(5)
+    Ktgs = '12345678'  # tgs 和 AS共有的 自己设置的
+    while True:
+        try:
+            client, addr = server.accept()
+            m = multiprocessing.Process(target=fun, args=(client,addr))
+            m.daemon = True  # daemon True设置为守护即主死子死.
+            m.start()
+        except ConnectionResetError:
+            pass
+
+        except Exception as e:
+            print(e)
 
 
 
 
-(pack,addr,client)=jieshou()
-unpack(pack)
 
 
 
