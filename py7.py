@@ -2,13 +2,15 @@ import socket
 import threading
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+myDict = dict()  # 当前在线人员
+myList = list()  # 当前socket在线客户端列表
+def cc():
+    sock.bind(('localhost', 5678))
 
-sock.bind(('192.168.1.105', 5963))#ip
-sock.listen(10)
-print('Server', socket.gethostbyname('服务器'), 'listening ...')
-
-myDict = dict() # 当前在线人员
-myList = list() # 当前socket在线客户端列表
+    sock.listen(5)
+    print('Server', socket.gethostbyname('localhost'), 'listening ...')
+#myDict = dict() # 当前在线人员
+#myList = list() # 当前socket在线客户端列表
 
 
 # 向除自己外的所有人发送消息
@@ -136,23 +138,25 @@ sendThread = threading.Thread(target=notification)
 sendThread.start()
 
 # 循环等待客户端接入
-while True:
-    connection, address = sock.accept()  # 阻塞接入客户端
-    print('142 接收一个新连接', connection, connection.getsockname(), connection.fileno(), address)
-    try:
+if __name__=="__main__":
+    while True:
+        cc()
+        connection, address = sock.accept()  # 阻塞接入客户端
+        print('142 接收一个新连接', connection, connection.getsockname(), connection.fileno(), address)
+        try:
         # connection.settimeout(5)
-        buf = connection.recv(1024).decode()
-        if buf == '1':
-            connection.send('[wel]:[welcome]\n'.encode())
-            connection.send(('[decide]:[' + str(len(myList)) + ']\n').encode())
+            buf = connection.recv(1024).decode()
+            if buf == '1':
+                connection.send('[wel]:[welcome]\n'.encode())
+                connection.send(('[decide]:[' + str(len(myList)) + ']\n').encode())
 
             # 为当前连接开辟一个新的线程
-            myThread = threading.Thread(target=subThreadIn, args=(connection, connection.fileno()))
-            myThread.setDaemon(True)
-            myThread.start()
+                myThread = threading.Thread(target=subThreadIn, args=(connection, connection.fileno()))
+                myThread.setDaemon(True)
+                myThread.start()
 
-        else:
-            connection.send('验证错误!'.encode())
-            connection.close()
-    except Exception as exception:
-     print('159 exception is : %s' % exception)
+            else:
+                connection.send('验证错误!'.encode())
+                connection.close()
+        except Exception as exception:
+            print('159 exception is : %s' % exception)
