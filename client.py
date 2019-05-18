@@ -1,33 +1,11 @@
 import hashlib
 # 导入socket包
 import socket, threading
-import rsa2
 import time
-import binascii
 from Common import *
-import types
 
 
-# 创建客户端对象
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-IDc = str(socket.gethostname()) #本机名字用于签名认证
-ADc = socket.gethostbyname(IDc)  #本机地址
-IDv='1234455'
-IPtgs='192.168.1.105'
-IDtgs = '1234'   #乱设置的
-IPv=''
-# 目标主机
-#host = input('输入目标ip')
-host='127.0.0.1'
-# 目标端口
-port = 9090
 
-# 连接客户端
-client.connect((host, port))
-
-print('-' * 5 + '已连接到服务器' + '-' * 5)
-Kc=''
-Ts3 = ''
 
 def fengzhuang(data):
     length = "{:4}".format(str(len(data)))
@@ -35,13 +13,11 @@ def fengzhuang(data):
     a=length+data
     return a
 
-def logging():
+
+def logging(user,mima):
 
 
         # 输入账号密码
-
-        user = input('')
-        mima = input('')
 
         ts = time.time()
         ts=str(int(ts))
@@ -61,14 +37,19 @@ def logging():
         Kc=mima
 
 
-def recv_basic():
-    total_data=''
-    while True:
-        data = (client.recv(2048)).decode('utf-8')
-        if not data: break
-        total_data=total_data+data
+def recv_basic(client):
+
+    data_1 = (client.recv(2048)).decode('utf-8')
+
     client.close()
-    return total_data
+    return data_1
+
+
+def recv_(client):
+    total_data=''
+    data = (client.recv(2048)).decode('utf-8')
+
+    return data
 
 '''def indatas():
         # 接受来自服务器的信息
@@ -135,11 +116,34 @@ def unpack_(pack):
         client = lianjie(IPtgs)
         client.send(pack2tgs.encode('utf-8'))
         print("已发送")
-        tgs_pack = recv_basic()
+        tgs_pack = recv_basic(client)
         unpack_tgs(tgs_pack)
         pack_v = pack2v(Ticketv)
         client = lianjie(IPv)
-        client.send(pack2tgs.encode('utf-8'))
+        client.send(pack_v.encode('utf-8'))
+        pack2c = recv_(client)
+        if unpack_c(pack2c)==True:
+            return True
+        else:
+            client.close()
+
+
+def unpack_c(pack):
+    length = int(pack[0:4])
+    data = pack[4:4+length]
+    C = pack[-258*3:-258*2]
+    key = pack[-258*2:]
+    print("data",data)
+
+    de_data = Des(data,Kc2v,1)
+    print("de_data",de_data)
+    print("key",key)
+    if yanzheng(data,C,key)==True:
+        print("RSA验证成功")
+        print("kerberos验证成功")
+        return True
+
+
 
 
 
@@ -150,7 +154,7 @@ def unpack_tgs(tgs_pack):
     data = tgs_pack[4:4+length]
     data = Des(data,Kc2tgs,1)
     global Kc2v
-    KC2V = data[0:8]
+    Kc2v = data[0:8]
     IDv = data[8:23]
     TS4 =data[23:33]
     global Ticketv
@@ -166,20 +170,42 @@ def pack2v(Ticketv):
     TS5 = str(int(time.time()))
     Authenticatorc = Des("{:15}".format(IDc)+"{:15}".format(ADc)+TS5,Kc2v,0)
     data = Ticketv + Authenticatorc
-    length = str(len(data))
+    length = str(len(Ticketv))
     (C,d,n) = qianming(data)
     pack_v = "{:4}".format(length)+data+"{:258}".format(C)+"{:258}".format(d)+"{:258}".format(n)
     return pack_v
 
+def kaishi(user,mima):
+    # 创建客户端对象
+    global client ,IDc,ADc,IDv,IPtgs,IDtgs,IPv,host,port, Kc,Ts3
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    IDc = str(socket.gethostname())  # 本机名字用于签名认证
+    ADc = socket.gethostbyname(IDc)  # 本机地址
+    IDv = '1234455'
+    IPtgs = '192.168.1.101'
+    IDtgs = '1234'  # 乱设置的
+    IPv = '192.168.1.108'
+    # 目标主机
+    # host = input('输入目标ip')
+    host = '192.168.1.107'
+    # 目标端口
+    port = 9090
 
+    # 连接客户端
+    client.connect((host, port))
 
+    print('-' * 5 + '已连接到服务器' + '-' * 5)
+    Kc = ''
+    Ts3 = ''
+    logging(user,mima)
+    pack1 = recv_basic(client)
+    print("123")
+    print("pack1",pack1)
+    result = unpack_(pack1)
+    return result
 
+'''user=input()
+mima=input()
+kaishi(user,mima)'''
 
-
-logging()
-pack1=recv_basic()
-unpack_(pack1)
-
-# 关闭连接
-#print('-' * 5 + '服务器断开连接' + '-' * 5)
 
